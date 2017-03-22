@@ -33,7 +33,7 @@ typedef struct {
 
 #else /* WITH_CONTIKI */
 
-#include "osInet.h"
+#include <platform/inet.h>
 
 typedef struct {
   socklen_t size;		/**< size of addr */
