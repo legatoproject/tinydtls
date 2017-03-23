@@ -36,6 +36,9 @@
  * for ECDH and ECDSA.
  */
 #include <inttypes.h>
+#ifdef __RTOS__
+#define inline
+#endif
 
 #define keyLengthInBytes 32
 #define arrayLength 8

@@ -19,7 +19,7 @@
 #define _DTLS_GLOBAL_H_
 
 #include <stdlib.h>
-#include <sys/types.h>
+#include <stdint.h>
 
 #include "tinydtls.h"
 

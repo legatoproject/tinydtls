@@ -23,7 +23,11 @@
 #define _DTLS_DTLS_TIME_H_
 
 #include <stdint.h>
+#ifndef __RTOS__
 #include <sys/time.h>
+#else
+#include <time.h>
+#endif
 
 #include "tinydtls.h"
 

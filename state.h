@@ -23,7 +23,6 @@
 #ifndef _DTLS_STATE_H_
 #define _DTLS_STATE_H_
 
-#include <sys/types.h>
 #include <stdint.h>
 
 #include "global.h"

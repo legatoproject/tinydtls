@@ -34,12 +34,19 @@
    && (A)->ifindex == (B)->ifindex)
 
 #else /* WITH_CONTIKI */
+#ifdef __RTOS__
+#define _dtls_address_equals_impl(A,B)				\
+  ((A)->size == (B)->size					\
+   && (A)->port == (B)->port					\
+   && (A)->ifindex == (B)->ifindex)
+/* TO BE CHANGED FOR ADDR COMPARE */
+#else
 
 static inline int 
 _dtls_address_equals_impl(const session_t *a,
 			  const session_t *b) {
-  if (a->ifindex != b->ifindex ||
-      a->size != b->size || a->addr.sa.sa_family != b->addr.sa.sa_family)
+  if ((a->ifindex != b->ifindex) ||
+      (a->size != b->size) || (a->addr.sa.sa_family != b->addr.sa.sa_family))
     return 0;
   
   /* need to compare only relevant parts of sockaddr_in6 */
@@ -58,6 +65,7 @@ _dtls_address_equals_impl(const session_t *a,
  }
  return 0;
 }
+#endif /* __RTOS__ */
 #endif /* WITH_CONTIKI */
 
 void

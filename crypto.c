@@ -37,7 +37,9 @@
 #include "netq.h"
 
 #ifndef WITH_CONTIKI
+#ifndef __RTOS__
 #include <pthread.h>
+#endif
 #endif
 
 #define HMAC_UPDATE_SEED(Context,Seed,Length)		\
@@ -45,13 +47,17 @@
 
 static struct dtls_cipher_context_t cipher_context;
 #ifndef WITH_CONTIKI
+#ifndef __RTOS__
 static pthread_mutex_t cipher_context_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
 #endif
 
 static struct dtls_cipher_context_t *dtls_cipher_context_get(void)
 {
 #ifndef WITH_CONTIKI
+#ifndef __RTOS__
   pthread_mutex_lock(&cipher_context_mutex);
+#endif
 #endif
   return &cipher_context;
 }
@@ -59,7 +65,9 @@ static struct dtls_cipher_context_t *dtls_cipher_context_get(void)
 static void dtls_cipher_context_release(void)
 {
 #ifndef WITH_CONTIKI
+#ifndef __RTOS__
   pthread_mutex_unlock(&cipher_context_mutex);
+#endif
 #endif
 }
 

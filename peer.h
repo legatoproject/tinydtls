@@ -23,7 +23,7 @@
 #ifndef _DTLS_PEER_H_
 #define _DTLS_PEER_H_
 
-#include <sys/types.h>
+#include <stdint.h>
 
 #include "tinydtls.h"
 #include "global.h"

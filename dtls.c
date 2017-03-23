@@ -20,6 +20,9 @@
 #include "tinydtls.h"
 #include "dtls_config.h"
 #include "dtls_time.h"
+#ifdef __RTOS__
+#define DTLS_PEERS_NOHASH
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1149,9 +1152,6 @@ check_finished(dtls_context_t *ctx, dtls_peer_t *peer,
   const unsigned char *label;
   unsigned char buf[DTLS_HMAC_MAX];
 
-  if (data_length < DTLS_HS_LENGTH + DTLS_FIN_LENGTH)
-    return dtls_alert_fatal_create(DTLS_ALERT_HANDSHAKE_FAILURE);
-
   /* Use a union here to ensure that sufficient stack space is
    * reserved. As statebuf and verify_data are not used at the same
    * time, we can re-use the storage safely.
@@ -1160,6 +1160,9 @@ check_finished(dtls_context_t *ctx, dtls_peer_t *peer,
     unsigned char statebuf[DTLS_HASH_CTX_SIZE];
     unsigned char verify_data[DTLS_FIN_LENGTH];
   } b;
+
+  if (data_length < DTLS_HS_LENGTH + DTLS_FIN_LENGTH)
+    return dtls_alert_fatal_create(DTLS_ALERT_HANDSHAKE_FAILURE);
 
   /* temporarily store hash status for roll-back after finalize */
   memcpy(b.statebuf, &peer->handshake_params->hs_state.hs_hash, DTLS_HASH_CTX_SIZE);
@@ -1526,7 +1529,9 @@ dtls_send_multi(dtls_context_t *ctx, dtls_peer_t *peer,
 static inline int
 dtls_send_alert(dtls_context_t *ctx, dtls_peer_t *peer, dtls_alert_level_t level,
 		dtls_alert_t description) {
-  uint8_t msg[] = { level, description };
+  uint8_t msg[2];
+  msg[0] = level;
+  msg[1] = description;
 
   dtls_send(ctx, peer, DTLS_CT_ALERT, msg, sizeof(msg));
   return 0;
@@ -3287,8 +3292,8 @@ handle_handshake_msg(dtls_context_t *ctx, dtls_peer_t *peer, session_t *session,
        peer = NULL;
     }
     if (!peer) {
-      dtls_debug("creating new peer\n");
       dtls_security_parameters_t *security;
+      dtls_debug("creating new peer\n");
 
       /* msg contains a Client Hello with a valid cookie, so we can
        * safely create the server state machine and continue with
@@ -3442,15 +3447,16 @@ handle_handshake(dtls_context_t *ctx, dtls_peer_t *peer, session_t *session,
       dtls_warn("the packet is too big to buffer for reoder\n");
       return 0;
     }
-
-    netq_t *node = netq_head(&peer->handshake_params->reorder_queue);
-    while (node) {
-      dtls_handshake_header_t *node_header = DTLS_HANDSHAKE_HEADER(node->data);
-      if (dtls_uint16_to_int(node_header->message_seq) == dtls_uint16_to_int(hs_header->message_seq)) {
-        dtls_warn("a packet with this sequence number is already stored\n");
-        return 0;
+    {
+      netq_t *node = netq_head(&peer->handshake_params->reorder_queue);
+      while (node) {
+        dtls_handshake_header_t *node_header = DTLS_HANDSHAKE_HEADER(node->data);
+        if (dtls_uint16_to_int(node_header->message_seq) == dtls_uint16_to_int(hs_header->message_seq)) {
+          dtls_warn("a packet with this sequence number is already stored\n");
+          return 0;
+        }
+        node = netq_next(node);
       }
-      node = netq_next(node);
     }
 
     n = netq_node_new(data_length);
@@ -3480,25 +3486,28 @@ handle_handshake(dtls_context_t *ctx, dtls_peer_t *peer, session_t *session,
     /* We do not know in which order the packet are in the list just search the list for every packet. */
     while (next && peer->handshake_params) {
       next = 0;
-      netq_t *node = netq_head(&peer->handshake_params->reorder_queue);
-      while (node) {
-        dtls_handshake_header_t *node_header = DTLS_HANDSHAKE_HEADER(node->data);
+      {
+        netq_t *node = netq_head(&peer->handshake_params->reorder_queue);
+        while (node) {
+          dtls_handshake_header_t *node_header = DTLS_HANDSHAKE_HEADER(node->data);
 
-        if (dtls_uint16_to_int(node_header->message_seq) == peer->handshake_params->hs_state.mseq_r) {
-          netq_remove(&peer->handshake_params->reorder_queue, node);
-          next = 1;
-          res = handle_handshake_msg(ctx, peer, session, role, peer->state, node->data, node->length);
-          if (res < 0) {
-            return res;
+          if (dtls_uint16_to_int(node_header->message_seq) == peer->handshake_params->hs_state.mseq_r) {
+            netq_remove(&peer->handshake_params->reorder_queue, node);
+            next = 1;
+            res = handle_handshake_msg(ctx, peer, session, role, peer->state, node->data, node->length);
+            if (res < 0) {
+              return res;
+            }
+
+            break;
+          } else {
+            node = netq_next(node);
           }
-
-          break;
-        } else {
-          node = netq_next(node);
         }
       }
     }
     return res;
+
   }
   assert(0);
   return 0;
@@ -3802,12 +3811,20 @@ dtls_context_t *
 dtls_new_context(void *app_data) {
   dtls_context_t *c;
   dtls_tick_t now;
+/*SWISTART*/
+/* /dev/urandom not available on this platform */
+#ifndef __RTOS__
 #ifndef WITH_CONTIKI
   FILE *urandom = fopen("/dev/urandom", "r");
   unsigned char buf[sizeof(unsigned long)];
 #endif /* WITH_CONTIKI */
+#endif /* __RTOS__ */
+/*SWISTOP*/
 
   dtls_ticks(&now);
+/*SWISTART*/
+/* /dev/urandom not available on this platform */
+#ifndef __RTOS__
 #ifdef WITH_CONTIKI
   /* FIXME: need something better to init PRNG here */
   dtls_prng_init(now);
@@ -3825,6 +3842,10 @@ dtls_new_context(void *app_data) {
   fclose(urandom);
   dtls_prng_init((unsigned long)*buf);
 #endif /* WITH_CONTIKI */
+#else /* __RTOS__ */
+  dtls_prng_init(now);
+#endif /* __RTOS__ */
+/*SWISTOP*/
 
   c = malloc_context();
   if (!c)

@@ -286,6 +286,9 @@ void dtls_dsrv_log_addr(log_t level, const char *name, const session_t *addr)
 }
 
 #ifndef WITH_CONTIKI
+/*SWISTART*/
+/*Macro-ed in dtls_debug.h in order to use the platform's standard debug output*/
+#ifndef __RTOS__
 void 
 dtls_dsrv_hexdump_log(log_t level, const char *name, const unsigned char *buf, size_t length, int extend) {
   static char timebuf[32];
@@ -329,6 +332,8 @@ dtls_dsrv_hexdump_log(log_t level, const char *name, const unsigned char *buf, s
 
   fflush(log_fd);
 }
+#endif /*__RTOS__*/
+/*SWISTOP*/
 #else /* WITH_CONTIKI */
 void 
 dtls_dsrv_hexdump_log(log_t level, const char *name, const unsigned char *buf, size_t length, int extend) {

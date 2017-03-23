@@ -74,7 +74,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define NO_DECLTYPE
 #define LDECLTYPE(x) char*
 #else                      /* GNU, Sun and other compilers */
+#ifdef __RTOS__
+#define NO_DECLTYPE
+#define LDECLTYPE(x) netq_t*
+#else
 #define LDECLTYPE(x) __typeof(x)
+#endif
 #endif
 
 /* for VS2008 we use some workarounds to get around the lack of decltype,

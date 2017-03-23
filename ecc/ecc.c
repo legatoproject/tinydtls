@@ -157,11 +157,11 @@ static int fieldSub(const uint32_t *x, const uint32_t *y, const uint32_t *modulu
 //finite Field multiplication
 //32bit * 32bit = 64bit
 static int fieldMult(const uint32_t *x, const uint32_t *y, uint32_t *result, uint8_t length){
-	uint32_t temp[length * 2];
-	setZero(temp, length * 2);
-	setZero(result, length * 2);
+	uint32_t temp[256 * 2];
 	uint8_t k, n;
 	uint64_t l;
+	setZero(temp, length * 2);
+	setZero(result, length * 2);
 	for (k = 0; k < length; k++){
 		for (n = 0; n < length; n++){ 
 			l = (uint64_t)x[n]*(uint64_t)y[k];
@@ -354,12 +354,12 @@ static void fieldInv(const uint32_t *A, const uint32_t *modulus, const uint32_t 
 	uint32_t u[8],v[8],x1[8],x2[8];
 	uint32_t tempm[8];
 	uint32_t tempm2[8];
+	uint8_t t;
 	setZero(tempm, 8);
 	setZero(tempm2, 8);
 	setZero(u, 8);
 	setZero(v, 8);
 
-	uint8_t t;
 	copy(A,u,arrayLength); 
 	copy(modulus,v,arrayLength); 
 	setZero(x1, 8);
@@ -491,13 +491,12 @@ void static ec_add(const uint32_t *px, const uint32_t *py, const uint32_t *qx, c
 void ecc_ec_mult(const uint32_t *px, const uint32_t *py, const uint32_t *secret, uint32_t *resultx, uint32_t *resulty){
 	uint32_t Qx[8];
 	uint32_t Qy[8];
+	uint32_t tempx[8];
+	uint32_t tempy[8];
+	int i;
 	setZero(Qx, 8);
 	setZero(Qy, 8);
 
-	uint32_t tempx[8];
-	uint32_t tempy[8];
-
-	int i;
 	for (i = 256;i--;){
 		ec_double(Qx, Qy, tempx, tempy);
 		copy(tempx, Qx,arrayLength);
