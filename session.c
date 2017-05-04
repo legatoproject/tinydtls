@@ -34,14 +34,6 @@
    && (A)->ifindex == (B)->ifindex)
 
 #else /* WITH_CONTIKI */
-#ifdef __RTOS__
-#define _dtls_address_equals_impl(A,B)				\
-  ((A)->size == (B)->size					\
-   && (A)->port == (B)->port					\
-   && (A)->ifindex == (B)->ifindex)
-/* TO BE CHANGED FOR ADDR COMPARE */
-#else
-
 static inline int 
 _dtls_address_equals_impl(const session_t *a,
 			  const session_t *b) {
@@ -65,7 +57,6 @@ _dtls_address_equals_impl(const session_t *a,
  }
  return 0;
 }
-#endif /* __RTOS__ */
 #endif /* WITH_CONTIKI */
 
 void
