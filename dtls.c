@@ -3516,7 +3516,7 @@ handle_ccs(dtls_context_t *ctx, dtls_peer_t *peer,
 	   uint8 *record_header, uint8 *data, size_t data_length)
 {
   int err;
-  dtls_handshake_parameters_t *handshake = peer->handshake_params;
+  dtls_handshake_parameters_t *handshake = NULL;
 
   /* A CCS message is handled after a KeyExchange message was
    * received from the client. When security parameters have been
@@ -3528,6 +3528,8 @@ handle_ccs(dtls_context_t *ctx, dtls_peer_t *peer,
     dtls_warn("expected ChangeCipherSpec during handshake\n");
     return 0;
   }
+
+  handshake = peer->handshake_params;
 
   if (data_length < 1 || data[0] != 1)
     return dtls_alert_fatal_create(DTLS_ALERT_DECODE_ERROR);
