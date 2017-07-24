@@ -6,7 +6,7 @@
  * and Eclipse Distribution License v. 1.0 which accompanies this distribution.
  *
  * The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
- * and the Eclipse Distribution License is available at 
+ * and the Eclipse Distribution License is available at
  * http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
@@ -50,7 +50,7 @@ const char *dtls_package_version() {
   return PACKAGE_VERSION;
 }
 
-log_t 
+log_t
 dtls_get_log_level() {
   return maxlog;
 }
@@ -66,7 +66,7 @@ dtls_set_log_level(log_t level) {
 
 /* this array has the same order as the type log_t */
 static char *loglevels[] = {
-  "EMRG", "ALRT", "CRIT", "WARN", "NOTE", "INFO", "DEBG" 
+  "EMRG", "ALRT", "CRIT", "WARN", "NOTE", "INFO", "DEBG"
 };
 
 #ifdef HAVE_TIME_H
@@ -75,6 +75,12 @@ static inline size_t
 print_timestamp(char *s, size_t len, time_t t) {
   struct tm *tmp;
   tmp = localtime(&t);
+  if (!tmp)
+  {
+     perror("tmp is NULL");
+     return 0;
+  }
+
   return strftime(s, len, "%b %d %H:%M:%S", tmp);
 }
 
@@ -83,8 +89,8 @@ print_timestamp(char *s, size_t len, time_t t) {
 static inline size_t
 print_timestamp(char *s, size_t len, clock_time_t t) {
 #ifdef HAVE_SNPRINTF
-  return snprintf(s, len, "%u.%03u", 
-		  (unsigned int)(t / CLOCK_SECOND), 
+  return snprintf(s, len, "%u.%03u",
+		  (unsigned int)(t / CLOCK_SECOND),
 		  (unsigned int)(t % CLOCK_SECOND));
 #else /* HAVE_SNPRINTF */
   /* @todo do manual conversion of timestamp */
