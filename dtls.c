@@ -2236,6 +2236,13 @@ dtls_send_client_key_exchange(dtls_context_t *ctx, dtls_peer_t *peer)
       return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
     }
     handshake->keyx.psk.id_length = (unsigned int)len;
+
+    if (len > DTLS_PSK_MAX_CLIENT_IDENTITY_LEN)
+    {
+        dtls_warn("psk identity hint is too long\n");
+        return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
+    }
+
     memcpy(handshake->keyx.psk.identity, p + sizeof(uint16), len);
 
     dtls_int_to_uint16(p, handshake->keyx.psk.id_length);

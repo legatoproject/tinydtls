@@ -127,6 +127,7 @@ dtls_hmac_finalize(dtls_hmac_context_t *ctx, unsigned char *result) {
 
   dtls_hash_init(&ctx->data);
   dtls_hash_update(&ctx->data, ctx->pad, DTLS_HMAC_BLOCKSIZE);
+  assert(DTLS_HMAC_DIGEST_SIZE >= len);
   dtls_hash_update(&ctx->data, buf, len);
 
   len = dtls_hash_finalize(result, &ctx->data);
