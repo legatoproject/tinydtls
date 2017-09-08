@@ -6,7 +6,7 @@
  * and Eclipse Distribution License v. 1.0 which accompanies this distribution.
  *
  * The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
- * and the Eclipse Distribution License is available at 
+ * and the Eclipse Distribution License is available at
  * http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
@@ -53,28 +53,34 @@ static inline void check_stack() {
 #endif
 
 /** Pre-defined log levels akin to what is used in \b syslog. */
-typedef enum { DTLS_LOG_EMERG=0, DTLS_LOG_ALERT, DTLS_LOG_CRIT, DTLS_LOG_WARN, 
+typedef enum { DTLS_LOG_EMERG=0, DTLS_LOG_ALERT, DTLS_LOG_CRIT, DTLS_LOG_WARN,
        DTLS_LOG_NOTICE, DTLS_LOG_INFO, DTLS_LOG_DEBUG
 } log_t;
 
 /** Returns a zero-terminated string with the name of this library. */
-const char *dtls_package_name();
+const char *dtls_package_name(void);
 
 /** Returns a zero-terminated string with the library version. */
-const char *dtls_package_version();
+const char *dtls_package_version(void);
 
 /** Returns the current log level. */
-log_t dtls_get_log_level();
+log_t dtls_get_log_level(void);
 
 /** Sets the log level to the specified value. */
 void dtls_set_log_level(log_t level);
 
-/** 
+/**
  * Writes the given text to \c stdout. The text is output only when \p
  * level is below or equal to the log level that set by
  * set_log_level(). */
 #ifdef HAVE_VPRINTF
+/*SWISTART*/
+#ifndef __RTOS__
 void dsrv_log(log_t level, char *format, ...);
+#else /*__RTOS__*/
+#define dsrv_log(dblv,fmt,...)  lwm2m_printf(fmt, ##__VA_ARGS__)
+#endif /*__RTOS__*/
+/*SWISTOP*/
 #else
 #define dsrv_log(level, format, ...) PRINTF(format, ##__VA_ARGS__)
 #endif
@@ -86,7 +92,13 @@ void hexdump(const unsigned char *packet, int length);
 /** dump as narrow string of hex digits */
 void dump(unsigned char *buf, size_t len);
 
+/*SWISTART*/
+#ifndef __RTOS__
 void dtls_dsrv_hexdump_log(log_t level, const char *name, const unsigned char *buf, size_t length, int extend);
+#else
+#define dtls_dsrv_hexdump_log(dblv, name, buf, len, ext)  lwm2mcore_DataDump(name,buf,len)
+#endif /*__RTOS__*/
+/*SWISTOP*/
 
 void dtls_dsrv_log_addr(log_t level, const char *name, const session_t *addr);
 
