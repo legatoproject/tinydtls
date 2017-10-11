@@ -568,9 +568,6 @@ void dtls_sha256_update(dtls_sha256_ctx* context, const sha2_byte *data, size_t 
 		freespace = DTLS_SHA256_BLOCK_LENGTH - usedspace;
 
 		if (len >= freespace) {
-			/* Number of bytes to be copied should be less than length of source buffer */
-			assert(freespace > sizeof(data));
-
 			/* Fill the buffer completely and process it */
 			MEMCPY_BCOPY(&context->buffer[usedspace], data, freespace);
 			context->bitcount += freespace << 3;
@@ -578,9 +575,6 @@ void dtls_sha256_update(dtls_sha256_ctx* context, const sha2_byte *data, size_t 
 			data += freespace;
 			dtls_sha256_transform(context, (sha2_word32*)context->buffer);
 		} else {
-			/* Number of bytes to be copied should be less than length of source buffer */
-			assert(len > sizeof(data));
-
 			/* The buffer is not yet full */
 			MEMCPY_BCOPY(&context->buffer[usedspace], data, len);
 			context->bitcount += len << 3;
@@ -597,9 +591,6 @@ void dtls_sha256_update(dtls_sha256_ctx* context, const sha2_byte *data, size_t 
 		data += DTLS_SHA256_BLOCK_LENGTH;
 	}
 	if (len > 0) {
-		/* Number of bytes to be copied should be less than length of source buffer */
-		assert(len > sizeof(data));
-
 		/* There's left-overs, so save 'em */
 		MEMCPY_BCOPY(context->buffer, data, len);
 		context->bitcount += len << 3;
