@@ -6,7 +6,7 @@
  * and Eclipse Distribution License v. 1.0 which accompanies this distribution.
  *
  * The Eclipse Public License is available at http://www.eclipse.org/legal/epl-v10.html
- * and the Eclipse Distribution License is available at 
+ * and the Eclipse Distribution License is available at
  * http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
@@ -24,6 +24,11 @@
 #define _DTLS_PEER_H_
 
 #include <stdint.h>
+#ifdef SIERRA
+#include <platform/types.h>
+#else
+#include <stdbool.h>
+#endif
 
 #include "tinydtls.h"
 #include "global.h"
@@ -38,7 +43,15 @@
 
 typedef enum { DTLS_CLIENT=0, DTLS_SERVER } dtls_peer_type;
 
-/** 
+/**
+ * Holds session identifier that should be used for DTLS resumption
+*/
+typedef struct {
+  char size;
+  char id[32];
+} session_id_t;
+
+/**
  * Holds security parameters, local state and the transport address
  * for each peer. */
 typedef struct dtls_peer_t {
@@ -48,10 +61,12 @@ typedef struct dtls_peer_t {
   UT_hash_handle hh;
 #endif /* DTLS_PEERS_NOHASH */
 
-  session_t session;	     /**< peer address and local interface */
+  session_id_t session_id; /**< session identifier */
+  session_t session;       /**< peer address and local interface */
 
   dtls_peer_type role;       /**< denotes if this host is DTLS_CLIENT or DTLS_SERVER */
   dtls_state_t state;        /**< DTLS engine state */
+  bool resumption;           /**< denotes if there is a session resumption attempt */
 
   dtls_security_parameters_t *security_params[2];
   dtls_handshake_parameters_t *handshake_params;
@@ -104,6 +119,14 @@ static inline void dtls_security_params_switch(dtls_peer_t *peer)
 
   peer->security_params[1] = peer->security_params[0];
   peer->security_params[0] = security;
+}
+
+static inline void dtls_security_params_switch_back(dtls_peer_t *peer)
+{
+  dtls_security_parameters_t * security = peer->security_params[0];
+
+  peer->security_params[0] = peer->security_params[1];
+  peer->security_params[1] = security;
 }
 
 void peer_init(void);

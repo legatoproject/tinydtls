@@ -282,6 +282,8 @@ int dtls_close(dtls_context_t *ctx, const session_t *remote);
 
 int dtls_renegotiate(dtls_context_t *ctx, const session_t *dst);
 
+int dtls_resume(dtls_context_t *ctx, const session_t *dst);
+
 /** 
  * Writes the application data given in @p buf to the peer specified
  * by @p session. 

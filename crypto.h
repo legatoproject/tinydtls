@@ -104,7 +104,7 @@ typedef struct {
 struct netq_t;
 
 typedef struct {
-  union {
+  struct {
     struct random_t {
       uint8 client[DTLS_RANDOM_LENGTH];	/**< client random gmt and bytes */
       uint8 server[DTLS_RANDOM_LENGTH];	/**< server random gmt and bytes */
