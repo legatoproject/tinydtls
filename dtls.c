@@ -2637,7 +2637,13 @@ check_server_hello(dtls_context_t *ctx,
       }
       else {
         dtls_warn("session id mismatch\n");
-        return dtls_alert_fatal_create(DTLS_ALERT_CLOSE_NOTIFY);
+
+        // clear the session id
+        memset(peer->session_id.id, 0, peer->session_id.size);
+        peer->session_id.size = 0;
+
+        // Initiate a full handshake
+        return dtls_alert_fatal_create(DTLS_ALERT_NO_RENEGOTIATION);
       }
     } else {
       /* server assigned session id */
