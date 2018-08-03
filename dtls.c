@@ -4174,8 +4174,8 @@ dtls_connect(dtls_context_t *ctx, const session_t *dst) {
 }
 
 static void
-dtls_retransmit(dtls_context_t *context, netq_t *node) {
-  if (!context || !node)
+dtls_retransmit(dtls_context_t *context, netq_t *node, bool* maxRetransmit) {
+  if (!context || !node || !maxRetransmit)
     return;
 
   /* re-initialize timeout when maximum number of retransmissions are not reached yet */
@@ -4192,6 +4192,8 @@ dtls_retransmit(dtls_context_t *context, netq_t *node) {
       node->retransmit_cnt++;
       node->t = now + (node->timeout << node->retransmit_cnt);
       netq_insert_node(&context->sendqueue, node);
+
+      *maxRetransmit = false;
 
       if (node->type == DTLS_CT_HANDSHAKE) {
 	dtls_handshake_header_t *hs_header = DTLS_HANDSHAKE_HEADER(data);
@@ -4218,6 +4220,7 @@ dtls_retransmit(dtls_context_t *context, netq_t *node) {
 
   /* no more retransmissions, remove node from system */
 
+  *maxRetransmit = true;
   dtls_debug("** removed transaction\n");
 
   /* And finally delete the node */
@@ -4241,14 +4244,24 @@ dtls_stop_retransmission(dtls_context_t *context, dtls_peer_t *peer) {
 }
 
 void
-dtls_check_retransmit(dtls_context_t *context, clock_time_t *next) {
+dtls_check_retransmit(dtls_context_t *context, clock_time_t *next, bool* maxRetransmit) {
   dtls_tick_t now;
   netq_t *node = netq_head(&context->sendqueue);
 
   dtls_ticks(&now);
+
+  if(!node) {
+    if (next) {
+      *next = 0;
+    }
+    *maxRetransmit = false;
+    return;
+  }
+
+  *maxRetransmit = false;
   while (node && node->t <= now) {
     netq_pop_first(&context->sendqueue);
-    dtls_retransmit(context, node);
+    dtls_retransmit(context, node, maxRetransmit);
     node = netq_head(&context->sendqueue);
   }
 

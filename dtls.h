@@ -306,8 +306,10 @@ int dtls_write(struct dtls_context_t *ctx, session_t *session,
  * @param next    If not NULL, @p next is filled with the timestamp
  *  of the next scheduled retransmission, or @c 0 when no packets are
  *  waiting.
+ * @param isMaxRetransmit    true if maximum retransmission is reached
+ * else false
  */
-void dtls_check_retransmit(dtls_context_t *context, clock_time_t *next);
+void dtls_check_retransmit(dtls_context_t *context, clock_time_t *next, bool* isMaxRetransmit);
 
 #define DTLS_COOKIE_LENGTH 16
 

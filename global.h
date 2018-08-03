@@ -59,7 +59,12 @@ typedef unsigned char uint48[6];
 
 #ifndef DTLS_DEFAULT_MAX_RETRANSMIT
 /** Number of message retransmissions. */
+#if SIERRA
+// According to RFC6347, 4.2.4.1:
+#define DTLS_DEFAULT_MAX_RETRANSMIT 4
+#else
 #define DTLS_DEFAULT_MAX_RETRANSMIT 7
+#endif /* SIERRA */
 #endif
 
 /** Known cipher suites.*/
