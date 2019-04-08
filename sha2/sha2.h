@@ -1,7 +1,7 @@
 /*
  * FILE:	sha2.h
  * AUTHOR:	Aaron D. Gifford - http://www.aarongifford.com/
- * 
+ *
  * Copyright (c) 2000-2001, Aaron D. Gifford
  * All rights reserved.
  *
@@ -16,7 +16,7 @@
  * 3. Neither the name of the copyright holder nor the names of contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTOR(S) ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -39,13 +39,18 @@
 extern "C" {
 #endif
 
-
 /*
  * Import u_intXX_t size_t type definitions from system headers.  You
  * may need to change this, or define these things yourself in this
  * file.
  */
 #include <sys/types.h>
+
+/* ffa start */
+/* use uint8_t instead of u_int8_t (uint8_t is <stdint.h> which is supported by more platform)*/
+#define SHA2_USE_INTTYPES_H 1
+/* ffa stop */
+
 
 #ifdef SHA2_USE_INTTYPES_H
 
@@ -84,7 +89,7 @@ typedef unsigned long long u_int64_t;  /* 8-bytes (64-bits) */
  *
  *   #include <inttypes.h>
  *
- * If you choose to use <inttypes.h> then please define: 
+ * If you choose to use <inttypes.h> then please define:
  *
  *   #define SHA2_USE_INTTYPES_H
  *

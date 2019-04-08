@@ -92,13 +92,7 @@ void hexdump(const unsigned char *packet, int length);
 /** dump as narrow string of hex digits */
 void dump(unsigned char *buf, size_t len);
 
-/*SWISTART*/
-#ifndef __RTOS__
 void dtls_dsrv_hexdump_log(log_t level, const char *name, const unsigned char *buf, size_t length, int extend);
-#else
-#define dtls_dsrv_hexdump_log(dblv, name, buf, len, ext)  lwm2mcore_DataDump(name,buf,len)
-#endif /*__RTOS__*/
-/*SWISTOP*/
 
 void dtls_dsrv_log_addr(log_t level, const char *name, const session_t *addr);
 

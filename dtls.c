@@ -20,9 +20,6 @@
 #include "tinydtls.h"
 #include "dtls_config.h"
 #include "dtls_time.h"
-#ifdef __RTOS__
-#define DTLS_PEERS_NOHASH
-#endif
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -16,12 +16,6 @@
  *******************************************************************************/
 
 #include "global.h"
-/*SWISTART*/
-/*Enabled for a consistent use of dtls_peer_t structures through the code*/
-#ifdef __RTOS__
-#define DTLS_PEERS_NOHASH
-#endif /*__RTOS__*/
-/*SWISTOP*/
 #include "peer.h"
 #include "dtls_debug.h"
 

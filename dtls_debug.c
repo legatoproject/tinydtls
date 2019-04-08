@@ -209,8 +209,9 @@ dsrv_print_addr(const session_t *addr, char *buf, size_t len) {
 
 #endif /* NDEBUG */
 
-#ifndef WITH_CONTIKI
 /*SWISTART*/
+#ifdef HAVE_VPRINTF
+#ifndef WITH_CONTIKI
 /*Macro-ed in dtls_debug.h in order to use the platform's standard debug output*/
 #ifndef __RTOS__
 void
@@ -236,8 +237,8 @@ dsrv_log(log_t level, char *format, ...) {
   fflush(log_fd);
 }
 #endif /*__RTOS__*/
+#else /* WITH_CONTIKI */
 /*SWISTOP*/
-#elif defined (HAVE_VPRINTF) /* WITH_CONTIKI */
 void
 dsrv_log(log_t level, char *format, ...) {
   static char timebuf[32];
@@ -257,6 +258,9 @@ dsrv_log(log_t level, char *format, ...) {
   va_end(ap);
 }
 #endif /* WITH_CONTIKI */
+/*SWISTART*/
+#endif /* HAVE_VPRINTF */
+/*SWISTOP*/
 
 #ifndef NDEBUG
 /** dumps packets in usual hexdump format */
@@ -342,6 +346,10 @@ dtls_dsrv_hexdump_log(log_t level, const char *name, const unsigned char *buf, s
   fprintf(log_fd, "\n");
 
   fflush(log_fd);
+}
+#else
+void dtls_dsrv_hexdump_log(log_t level, const char *name, const unsigned char *buf, size_t length, int extend)
+{
 }
 #endif /*__RTOS__*/
 /*SWISTOP*/

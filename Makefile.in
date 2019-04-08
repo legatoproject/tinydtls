@@ -42,7 +42,7 @@ HEADERS:=dtls.h hmac.h dtls_debug.h dtls_config.h uthash.h numeric.h crypto.h gl
  tinydtls.h
 CFLAGS:=-Wall -pedantic -std=c99 @CFLAGS@
 CPPFLAGS:=@CPPFLAGS@ -DDTLS_CHECK_CONTENTTYPE
-SUBDIRS:=tests doc platform-specific sha2 aes ecc
+SUBDIRS:=doc platform-specific sha2 aes
 DISTSUBDIRS:=$(SUBDIRS)
 DISTDIR=$(top_builddir)/$(package)
 FILES:=Makefile.in configure configure.in dtls_config.h.in tinydtls.h.in \
