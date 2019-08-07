@@ -18,7 +18,6 @@
 #include <stdio.h>
 
 #include "tinydtls.h"
-#include "dtls_config.h"
 
 #ifdef HAVE_ASSERT_H
 #include <assert.h>
@@ -72,11 +71,11 @@ static void dtls_cipher_context_release(void)
 }
 
 #ifndef WITH_CONTIKI
-void crypto_init()
+void crypto_init(void)
 {
 }
 
-static dtls_handshake_parameters_t *dtls_handshake_malloc() {
+static dtls_handshake_parameters_t *dtls_handshake_malloc(void) {
   return malloc(sizeof(dtls_handshake_parameters_t));
 }
 
@@ -84,7 +83,7 @@ static void dtls_handshake_dealloc(dtls_handshake_parameters_t *handshake) {
   free(handshake);
 }
 
-static dtls_security_parameters_t *dtls_security_malloc() {
+static dtls_security_parameters_t *dtls_security_malloc(void) {
   return malloc(sizeof(dtls_security_parameters_t));
 }
 
@@ -97,12 +96,12 @@ static void dtls_security_dealloc(dtls_security_parameters_t *security) {
 MEMB(handshake_storage, dtls_handshake_parameters_t, DTLS_HANDSHAKE_MAX);
 MEMB(security_storage, dtls_security_parameters_t, DTLS_SECURITY_MAX);
 
-void crypto_init() {
+void crypto_init(void) {
   memb_init(&handshake_storage);
   memb_init(&security_storage);
 }
 
-static dtls_handshake_parameters_t *dtls_handshake_malloc() {
+static dtls_handshake_parameters_t *dtls_handshake_malloc(void) {
   return memb_alloc(&handshake_storage);
 }
 
@@ -110,7 +109,7 @@ static void dtls_handshake_dealloc(dtls_handshake_parameters_t *handshake) {
   memb_free(&handshake_storage, handshake);
 }
 
-static dtls_security_parameters_t *dtls_security_malloc() {
+static dtls_security_parameters_t *dtls_security_malloc(void) {
   return memb_alloc(&security_storage);
 }
 
@@ -119,7 +118,7 @@ static void dtls_security_dealloc(dtls_security_parameters_t *security) {
 }
 #endif /* WITH_CONTIKI */
 
-dtls_handshake_parameters_t *dtls_handshake_new()
+dtls_handshake_parameters_t *dtls_handshake_new(void)
 {
   dtls_handshake_parameters_t *handshake;
 
@@ -151,7 +150,7 @@ void dtls_handshake_free(dtls_handshake_parameters_t *handshake)
   dtls_handshake_dealloc(handshake);
 }
 
-dtls_security_parameters_t *dtls_security_new()
+dtls_security_parameters_t *dtls_security_new(void)
 {
   dtls_security_parameters_t *security;
 
@@ -191,6 +190,7 @@ dtls_p_hash(dtls_hashfunc_t h,
   unsigned char tmp[DTLS_HMAC_DIGEST_SIZE];
   size_t dlen;			/* digest length */
   size_t len = 0;			/* result length */
+  (void)h;
 
   hmac_a = dtls_hmac_new(key, keylen);
   if (!hmac_a)
@@ -284,6 +284,7 @@ dtls_ccm_encrypt(aes128_ccm_t *ccm_ctx, const unsigned char *src, size_t srclen,
 		 unsigned char *nounce,
 		 const unsigned char *aad, size_t la) {
   long int len;
+  (void)src;
 
   assert(ccm_ctx);
 
@@ -301,6 +302,7 @@ dtls_ccm_decrypt(aes128_ccm_t *ccm_ctx, const unsigned char *src,
 		 unsigned char *nounce,
 		 const unsigned char *aad, size_t la) {
   long int len;
+  (void)src;
 
   assert(ccm_ctx);
 

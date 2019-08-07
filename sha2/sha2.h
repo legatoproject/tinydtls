@@ -45,6 +45,7 @@ extern "C" {
  * file.
  */
 #include <sys/types.h>
+#include "tinydtls.h"
 
 /* ffa start */
 /* use uint8_t instead of u_int8_t (uint8_t is <stdint.h> which is supported by more platform)*/

@@ -20,7 +20,7 @@
 
 #include <stdlib.h>
 
-#include "dtls_config.h"
+#include "tinydtls.h"
 #include "global.h"
 #include "session.h"
 
@@ -33,7 +33,7 @@
 #ifdef CONTIKI_TARGET_MBXXX
 extern char __Stack_Init, _estack;
 
-static inline void check_stack() {
+static inline void check_stack(void) {
   const char *p = &__Stack_Init;
   while (p < &_estack && *p == 0x38) {
     p++;
@@ -42,13 +42,13 @@ static inline void check_stack() {
   PRINTF("Stack: %d bytes used (%d free)\n", &_estack - p, p - &__Stack_Init);
 }
 #else /* CONTIKI_TARGET_MBXXX */
-static inline void check_stack() {
+static inline void check_stack(void) {
 }
 #endif /* CONTIKI_TARGET_MBXXX */
 #else /* WITH_CONTKI */
 #define PRINTF(...)
 
-static inline void check_stack() {
+static inline void check_stack(void) {
 }
 #endif
 
