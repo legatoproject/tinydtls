@@ -41,6 +41,10 @@
 #endif
 #endif
 
+#ifdef __THREADX__
+#include "legato.h"
+#endif
+
 #define HMAC_UPDATE_SEED(Context,Seed,Length)		\
   if (Seed) dtls_hmac_update(Context, (Seed), (Length))
 
@@ -266,7 +270,8 @@ dtls_mac(dtls_hmac_context_t *hmac_ctx,
 	 const unsigned char *record,
 	 const unsigned char *packet, size_t length,
 	 unsigned char *buf) {
-  uint16 L;
+  unsigned char tmp[2] = {0};
+  unsigned char* L = tmp;
   dtls_int_to_uint16(L, length);
 
   assert(hmac_ctx);

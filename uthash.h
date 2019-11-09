@@ -209,6 +209,9 @@ do {                                                                            
 #define HASH_BLOOM_BYTELEN 0U
 #endif
 
+// The only difference between __THREADX__ and other products is ut_hash_free
+// after HASH_RECORD_OOM. That line is unreachable according to the armcc compiler.
+#ifndef __ARMCC_VERSION
 #define HASH_MAKE_TABLE(hh,head,oomed)                                           \
 do {                                                                             \
   (head)->hh.tbl = (UT_hash_table*)uthash_malloc(sizeof(UT_hash_table));         \
@@ -240,6 +243,38 @@ do {                                                                            
     }                                                                            \
   }                                                                              \
 } while (0)
+#else
+#define HASH_MAKE_TABLE(hh,head,oomed)                                           \
+do {                                                                             \
+  (head)->hh.tbl = (UT_hash_table*)uthash_malloc(sizeof(UT_hash_table));         \
+  if (!(head)->hh.tbl) {                                                         \
+    HASH_RECORD_OOM(oomed);                                                      \
+  } else {                                                                       \
+    uthash_bzero((head)->hh.tbl, sizeof(UT_hash_table));                         \
+    (head)->hh.tbl->tail = &((head)->hh);                                        \
+    (head)->hh.tbl->num_buckets = HASH_INITIAL_NUM_BUCKETS;                      \
+    (head)->hh.tbl->log2_num_buckets = HASH_INITIAL_NUM_BUCKETS_LOG2;            \
+    (head)->hh.tbl->hho = (char*)(&(head)->hh) - (char*)(head);                  \
+    (head)->hh.tbl->buckets = (UT_hash_bucket*)uthash_malloc(                    \
+        HASH_INITIAL_NUM_BUCKETS * sizeof(struct UT_hash_bucket));               \
+    (head)->hh.tbl->signature = HASH_SIGNATURE;                                  \
+    if (!(head)->hh.tbl->buckets) {                                              \
+      HASH_RECORD_OOM(oomed);                                                    \
+    } else {                                                                     \
+      uthash_bzero((head)->hh.tbl->buckets,                                      \
+          HASH_INITIAL_NUM_BUCKETS * sizeof(struct UT_hash_bucket));             \
+      HASH_BLOOM_MAKE((head)->hh.tbl, oomed);                                    \
+      IF_HASH_NONFATAL_OOM(                                                      \
+        if (oomed) {                                                             \
+          uthash_free((head)->hh.tbl->buckets,                                   \
+              HASH_INITIAL_NUM_BUCKETS*sizeof(struct UT_hash_bucket));           \
+          uthash_free((head)->hh.tbl, sizeof(UT_hash_table));                    \
+        }                                                                        \
+      )                                                                          \
+    }                                                                            \
+  }                                                                              \
+} while (0)
+#endif /* end __THREADX__ */
 
 #define HASH_REPLACE_BYHASHVALUE_INORDER(hh,head,fieldname,keylen_in,hashval,add,replaced,cmpfcn) \
 do {                                                                             \

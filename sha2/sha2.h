@@ -44,7 +44,9 @@ extern "C" {
  * may need to change this, or define these things yourself in this
  * file.
  */
+#ifndef __THREADX__
 #include <sys/types.h>
+#endif
 #include "tinydtls.h"
 
 /* ffa start */

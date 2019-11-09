@@ -27,7 +27,7 @@
 #include <sys/time.h>
 #else
 #include <time.h>
-#endif
+#endif /* end HAVE_SYS_TIME_H */
 
 #include "tinydtls.h"
 

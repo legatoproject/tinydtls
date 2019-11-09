@@ -74,7 +74,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define NO_DECLTYPE
 #define LDECLTYPE(x) char*
 #else                      /* GNU, Sun and other compilers */
-#ifdef __RTOS__
+#if defined(__RTOS__) || defined(__THREADX__)
 #define NO_DECLTYPE
 #define LDECLTYPE(x) netq_t*
 #else
@@ -88,7 +88,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * to dereference its prev/next pointers, and save/restore the real head.*/
 #ifdef NO_DECLTYPE
 #define IF_NO_DECLTYPE(x) x
+#ifndef __THREADX__
 #define LDECLTYPE(x) char*
+#endif
 #define UTLIST_SV(elt,list) _tmp = (char*)(list); {char **_alias = (char**)&(list); *_alias = (elt); }
 #define UTLIST_NEXT(elt,list,next) ((char*)((list)->next))
 #define UTLIST_NEXTASGN(elt,list,to,next) { char **_alias = (char**)&((list)->next); *_alias=(char*)(to); }

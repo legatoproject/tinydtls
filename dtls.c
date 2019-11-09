@@ -65,7 +65,7 @@
 
 #define dtls_get_content_type(H) ((H)->content_type & 0xff)
 #define dtls_get_version(H) dtls_uint16_to_int((H)->version)
-#define dtls_get_epoch(H) dtls_uint16_to_int((H)->epoch)
+#define dtls_get_epoch(H) dtls_uint16_to_int((unsigned char *)&(H)->epoch)
 #define dtls_get_sequence_number(H) dtls_uint48_to_ulong((H)->sequence_number)
 #define dtls_get_fragment_length(H) dtls_uint24_to_int((H)->fragment_length)
 
@@ -395,7 +395,7 @@ is_record(uint8 *msg, size_t msglen) {
       && msg[2] == LOW(DTLS_VERSION))
     {
       rlen = DTLS_RH_LENGTH +
-	dtls_uint16_to_int(DTLS_RECORD_HEADER(msg)->length);
+	dtls_uint16_to_int((unsigned char *)&DTLS_RECORD_HEADER(msg)->length);
 
       /* we do not accept wrong length field in record header */
       if (rlen > msglen)
@@ -578,7 +578,7 @@ hs_attempt_with_existing_peer(uint8_t *msg, size_t msglen,
   (void)msglen;
     if ((peer) && (peer->state == DTLS_STATE_CONNECTED)) {
       if (msg[0] == DTLS_CT_HANDSHAKE) {
-        uint16_t msg_epoch = dtls_uint16_to_int(DTLS_RECORD_HEADER(msg)->epoch);
+        uint16_t msg_epoch = dtls_uint16_to_int((unsigned char *)&DTLS_RECORD_HEADER(msg)->epoch);
         if (msg_epoch == 0) {
           dtls_handshake_header_t * hs_header = DTLS_HANDSHAKE_HEADER(msg + DTLS_RH_LENGTH);
           if (hs_header->msg_type == DTLS_HT_CLIENT_HELLO ||
@@ -786,8 +786,6 @@ recalculate_key_block(dtls_context_t *ctx,
                       dtls_peer_t *peer,
                       session_t *session,
                       dtls_peer_type role) {
-  unsigned char *pre_master_secret;
-  int pre_master_len = MAX_KEYBLOCK_LENGTH;
   dtls_security_parameters_t *security = dtls_security_params_next(peer);
 
   if (!security) {
@@ -1059,7 +1057,7 @@ dtls_update_parameters(dtls_context_t *ctx,
 
   ok = 0;
   while (i && !ok) {
-    config->cipher = dtls_uint16_to_int(data);
+    config->cipher = (dtls_cipher_t)dtls_uint16_to_int(data);
     ok = known_cipher(ctx, config->cipher, 0);
     i -= sizeof(uint16);
     data += sizeof(uint16);
@@ -1095,7 +1093,7 @@ dtls_update_parameters(dtls_context_t *ctx,
   while (i && !ok) {
     for (j = 0; j < sizeof(compression_methods) / sizeof(uint8); ++j)
       if (dtls_uint8_to_int(data) == compression_methods[j]) {
-	config->compression = compression_methods[j];
+	config->compression = (dtls_compression_t)compression_methods[j];
 	ok = 1;
       }
     i -= sizeof(uint8);
@@ -1386,7 +1384,7 @@ dtls_prepare_record(dtls_peer_t *peer, dtls_security_parameters_t *security,
    	            } CCMNonceExample;
     */
 
-    memcpy(p, &DTLS_RECORD_HEADER(sendbuf)->epoch, 8);
+    memcpy(p, (void *)&DTLS_RECORD_HEADER(sendbuf)->epoch, 8);
     p += 8;
     res = 8;
 
@@ -1416,7 +1414,7 @@ dtls_prepare_record(dtls_peer_t *peer, dtls_security_parameters_t *security,
      * additional_data = seq_num + TLSCompressed.type +
      *                   TLSCompressed.version + TLSCompressed.length;
      */
-    memcpy(A_DATA, &DTLS_RECORD_HEADER(sendbuf)->epoch, 8); /* epoch and seq_num */
+    memcpy(A_DATA, (void *)&DTLS_RECORD_HEADER(sendbuf)->epoch, 8); /* epoch and seq_num */
     memcpy(A_DATA + 8,  &DTLS_RECORD_HEADER(sendbuf)->content_type, 3); /* type and version */
     dtls_int_to_uint16(A_DATA + 11, res - 8); /* length */
 
@@ -2715,7 +2713,7 @@ check_server_hello(dtls_context_t *ctx,
   /* Check cipher suite. As we offer all we have, it is sufficient
    * to check if the cipher suite selected by the server is in our
    * list of known cipher suites. Subsets are not supported. */
-  handshake->cipher = dtls_uint16_to_int(data);
+  handshake->cipher = (dtls_cipher_t)dtls_uint16_to_int(data);
   if (!known_cipher(ctx, handshake->cipher, 1)) {
     dtls_alert("unsupported cipher 0x%02x 0x%02x\n",
 	     data[0], data[1]);
@@ -3132,7 +3130,7 @@ decrypt_verify(dtls_peer_t *peer, uint8 *packet, size_t length,
      * additional_data = seq_num + TLSCompressed.type +
      *                   TLSCompressed.version + TLSCompressed.length;
      */
-    memcpy(A_DATA, &DTLS_RECORD_HEADER(packet)->epoch, 8); /* epoch and seq_num */
+    memcpy(A_DATA, (void *)&DTLS_RECORD_HEADER(packet)->epoch, 8); /* epoch and seq_num */
     memcpy(A_DATA + 8,  &DTLS_RECORD_HEADER(packet)->content_type, 3); /* type and version */
     dtls_int_to_uint16(A_DATA + 11, clen - 8); /* length without nonce_explicit */
 
@@ -3571,7 +3569,7 @@ handle_handshake_msg(dtls_context_t *ctx, dtls_peer_t *peer, session_t *session,
       if (!peer->handshake_params)
         return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
 
-      peer->handshake_params->hs_state.mseq_r = dtls_uint16_to_int(hs_header->message_seq);
+      peer->handshake_params->hs_state.mseq_r = dtls_uint16_to_int((unsigned char *)&hs_header->message_seq);
       peer->handshake_params->hs_state.mseq_s = 1;
     }
 
@@ -3681,11 +3679,11 @@ handle_handshake(dtls_context_t *ctx, dtls_peer_t *peer, session_t *session,
     }
   }
 
-  if (dtls_uint16_to_int(hs_header->message_seq) < peer->handshake_params->hs_state.mseq_r) {
+  if (dtls_uint16_to_int((unsigned char *)&hs_header->message_seq) < peer->handshake_params->hs_state.mseq_r) {
     dtls_warn("The message sequence number is too small, expected %i, got: %i\n",
 	      peer->handshake_params->hs_state.mseq_r, dtls_uint16_to_int(hs_header->message_seq));
     return 0;
-  } else if (dtls_uint16_to_int(hs_header->message_seq) > peer->handshake_params->hs_state.mseq_r) {
+  } else if (dtls_uint16_to_int((unsigned char *)&hs_header->message_seq) > peer->handshake_params->hs_state.mseq_r) {
     /* A packet in between is missing, buffer this packet. */
     netq_t *n;
 
@@ -3698,7 +3696,7 @@ handle_handshake(dtls_context_t *ctx, dtls_peer_t *peer, session_t *session,
       netq_t *node = netq_head(&peer->handshake_params->reorder_queue);
       while (node) {
         dtls_handshake_header_t *node_header = DTLS_HANDSHAKE_HEADER(node->data);
-        if (dtls_uint16_to_int(node_header->message_seq) == dtls_uint16_to_int(hs_header->message_seq)) {
+        if (dtls_uint16_to_int((unsigned char *)&node_header->message_seq) == dtls_uint16_to_int((unsigned char *)&hs_header->message_seq)) {
           dtls_warn("a packet with this sequence number is already stored\n");
           return 0;
         }
@@ -3722,7 +3720,7 @@ handle_handshake(dtls_context_t *ctx, dtls_peer_t *peer, session_t *session,
     }
     dtls_info("Added packet for reordering\n");
     return 0;
-  } else if (dtls_uint16_to_int(hs_header->message_seq) == peer->handshake_params->hs_state.mseq_r) {
+  } else if (dtls_uint16_to_int((unsigned char *)&hs_header->message_seq) == peer->handshake_params->hs_state.mseq_r) {
     /* Found the expected packet, use this and all the buffered packet */
     int next = 1;
 
@@ -3738,7 +3736,7 @@ handle_handshake(dtls_context_t *ctx, dtls_peer_t *peer, session_t *session,
         while (node) {
           dtls_handshake_header_t *node_header = DTLS_HANDSHAKE_HEADER(node->data);
 
-          if (dtls_uint16_to_int(node_header->message_seq) == peer->handshake_params->hs_state.mseq_r) {
+          if (dtls_uint16_to_int((unsigned char *)&node_header->message_seq) == peer->handshake_params->hs_state.mseq_r) {
             netq_remove(&peer->handshake_params->reorder_queue, node);
             next = 1;
             res = handle_handshake_msg(ctx, peer, session, role, peer->state, node->data, node->length);
@@ -3879,7 +3877,7 @@ static int dtls_alert_send_from_err(dtls_context_t *ctx, dtls_peer_t *peer,
     }
     if (peer) {
       peer->state = DTLS_STATE_CLOSING;
-      return dtls_send_alert(ctx, peer, level, desc);
+      return dtls_send_alert(ctx, peer, (dtls_alert_level_t)level, (dtls_alert_t)desc);
     }
   } else if (err == -1) {
     if (!peer) {
@@ -3917,7 +3915,14 @@ dtls_handle_message(dtls_context_t *ctx,
     dtls_debug("dtls_handle_message: FOUND PEER\n");
   }
 
-  while ((rlen = is_record(msg,msglen))) {
+  while (1) {
+    rlen = is_record(msg,msglen);
+
+    if (!rlen)
+    {
+      break;
+    }
+
     dtls_peer_type role;
     dtls_state_t state;
 
@@ -3927,7 +3932,7 @@ dtls_handle_message(dtls_context_t *ctx,
 
       dtls_security_parameters_t *security = dtls_security_params_epoch(peer, dtls_get_epoch(header));
       if (!security) {
-        dtls_alert("No security context for epoch: %i\n", dtls_get_epoch(header));
+        dtls_debug("No security context for epoch: %i\n", dtls_get_epoch(header));
         data_length = -1;
       } else {
         uint64_t pkt_seq_nr = dtls_uint48_to_int(header->sequence_number);
@@ -3935,26 +3940,26 @@ dtls_handle_message(dtls_context_t *ctx,
           data_length = decrypt_verify(peer, msg, rlen, &data);
           if (data_length) {
             security->cseq.cseq = 0;
-            security->cseq.bitfield = -1;
+            security->cseq.bitfield = (uint64_t)-1;
           }
         } else if (pkt_seq_nr == security->cseq.cseq) {
-          dtls_info("Duplicate packet arrived (cseq=%" PRIu64 ")\n", security->cseq.cseq);
+          dtls_debug("Duplicate packet arrived (cseq=%" PRIu64 ")\n", security->cseq.cseq);
           return 0;
         } else if ((int64_t)(security->cseq.cseq-pkt_seq_nr) > 0) { /* pkt_seq_nr < security->cseq.cseq */
           if (((security->cseq.cseq-1)-pkt_seq_nr) < 64) {
               if(security->cseq.bitfield & (1<<((security->cseq.cseq-1)-pkt_seq_nr))) {
-                dtls_info("Duplicate packet arrived (bitfield)\n");
+                dtls_debug("Duplicate packet arrived (bitfield)\n");
                 /* seen it */
                   return 0;
               } else {
-                dtls_info("Packet arrived out of order\n");
+                dtls_debug("Packet arrived out of order\n");
                 data_length = decrypt_verify(peer, msg, rlen, &data);
                 if(data_length > 0) {
                   security->cseq.bitfield |= (1<<((security->cseq.cseq-1)-pkt_seq_nr));
                 }
               }
           } else {
-            dtls_info("Packet from before the bitfield arrived\n");
+            dtls_debug("Packet from before the bitfield arrived\n");
               return 0;
           }
         } else { /* pkt_seq_nr > security->cseq.cseq */
@@ -4055,7 +4060,7 @@ dtls_handle_message(dtls_context_t *ctx,
       if (peer) {
         uint16_t expected_epoch = dtls_security_params(peer)->epoch;
         uint16_t msg_epoch =
-        dtls_uint16_to_int(DTLS_RECORD_HEADER(msg)->epoch);
+        dtls_uint16_to_int((unsigned char *)&DTLS_RECORD_HEADER(msg)->epoch);
 
         /* The new security parameters must be used for all messages
          * that are sent after the ChangeCipherSpec message. This
@@ -4087,7 +4092,7 @@ dtls_handle_message(dtls_context_t *ctx,
       if (peer && peer->state == DTLS_STATE_CONNECTED) {
         /* stop retransmissions */
         dtls_stop_retransmission(ctx, peer);
-        CALL(ctx, event, &peer->session, 0, DTLS_EVENT_CONNECTED);
+        CALL(ctx, event, &peer->session, (dtls_alert_level_t)0, DTLS_EVENT_CONNECTED);
       }
       break;
 
@@ -4119,7 +4124,7 @@ dtls_new_context(void *app_data) {
   dtls_tick_t now;
 /*SWISTART*/
 /* /dev/urandom not available on this platform */
-#ifndef __RTOS__
+#if !defined(__RTOS__) && !defined(__THREADX__)
 #ifndef WITH_CONTIKI
   FILE *urandom = fopen("/dev/urandom", "r");
   unsigned char buf[sizeof(unsigned long)];
@@ -4130,7 +4135,7 @@ dtls_new_context(void *app_data) {
   dtls_ticks(&now);
 /*SWISTART*/
 /* /dev/urandom not available on this platform */
-#ifndef __RTOS__
+#if !defined(__RTOS__) && !defined(__THREADX__)
 #ifdef WITH_CONTIKI
   /* FIXME: need something better to init PRNG here */
   dtls_prng_init(now);
@@ -4272,9 +4277,9 @@ dtls_connect(dtls_context_t *ctx, const session_t *dst) {
   /* Invoke event callback to indicate connection attempt or
    * re-negotiation. */
   if (res > 0) {
-    CALL(ctx, event, &peer->session, 0, DTLS_EVENT_CONNECT);
+    CALL(ctx, event, &peer->session, (dtls_alert_level_t)0, DTLS_EVENT_CONNECT);
   } else if (res == 0) {
-    CALL(ctx, event, &peer->session, 0, DTLS_EVENT_RENEGOTIATE);
+    CALL(ctx, event, &peer->session, (dtls_alert_level_t)0, DTLS_EVENT_RENEGOTIATE);
   }
 
   return res;
@@ -4305,8 +4310,10 @@ dtls_retransmit(dtls_context_t *context, netq_t *node, bool* maxRetransmit) {
       if (node->type == DTLS_CT_HANDSHAKE) {
 	dtls_handshake_header_t *hs_header = DTLS_HANDSHAKE_HEADER(data);
 
+  char *handshakeName = dtls_handshake_type_to_name(hs_header->msg_type);
+
 	dtls_debug("** retransmit handshake packet of type: %s (%i)\n",
-	           dtls_handshake_type_to_name(hs_header->msg_type), hs_header->msg_type);
+	           handshakeName, hs_header->msg_type);
       } else {
 	dtls_debug("** retransmit packet\n");
       }

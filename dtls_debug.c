@@ -26,7 +26,7 @@
 
 #ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
-#endif
+#endif /* end HAVE_ARPA_INET_H */
 
 #ifdef HAVE_TIME_H
 #include <time.h>
@@ -51,7 +51,7 @@ const char *dtls_package_version() {
 
 log_t
 dtls_get_log_level() {
-  return maxlog;
+  return (log_t)maxlog;
 }
 
 void

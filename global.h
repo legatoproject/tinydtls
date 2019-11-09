@@ -37,9 +37,13 @@
 /* Define our own types as at least uint32_t does not work on my amd64. */
 
 typedef unsigned char uint8;
+#ifndef __ARMCC_VERSION
 typedef unsigned char uint16[2];
+#endif
 typedef unsigned char uint24[3];
+#ifndef __ARMCC_VERSION
 typedef unsigned char uint32[4];
+#endif
 typedef unsigned char uint48[6];
 
 #ifndef DTLS_MAX_BUF
