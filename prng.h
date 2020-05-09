@@ -24,6 +24,7 @@
 #define _DTLS_PRNG_H_
 
 #include "tinydtls.h"
+#include "alert.h"
 
 /** 
  * @defgroup prng Pseudo Random Numbers
@@ -32,6 +33,39 @@
 
 #ifndef WITH_CONTIKI
 #include <stdlib.h>
+
+#ifdef __RTOS__
+
+/*
+ * brief:   Fills buf with len random bytes
+ * param:   buf:  [IN/OUT]  buffer to store random data
+ *          len:  [IN]      length of buf in bytes
+ * return:  1:    success
+ *         <0:    failure
+ */
+static int dtls_prng(unsigned char *buf, size_t len)
+{
+  if( rng_gen_random(buf, len) != 0 )
+  {
+    dtls_debug( "RNG failed" );
+    return( dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR) );
+  }
+
+  return( 1 );
+}
+
+/*
+ * brief:   Initializes RNG
+ * param:   seed: [IN]  unused param
+ */
+static void dtls_prng_init(unsigned short seed)
+{
+  (void)seed; /* unused param */
+
+  rng_init();
+}
+
+#else /* __RTOS__ */
 
 /**
  * Fills \p buf with \p len random bytes. This is the default
@@ -49,6 +83,8 @@ static inline void
 dtls_prng_init(unsigned short seed) {
 	srand(seed);
 }
+#endif /* __RTOS__ */
+
 #else /* WITH_CONTIKI */
 #include <string.h>
 #include "random.h"
