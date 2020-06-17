@@ -3446,8 +3446,9 @@ handle_handshake_msg(dtls_context_t *ctx, dtls_peer_t *peer, session_t *session,
       }
     }
 
-    dtls_security_params_free_other(peer);
+    dtls_handshake_free(peer->handshake_params);
     peer->handshake_params = NULL;
+    dtls_security_params_free_other(peer);
 
     dtls_debug("Handshake complete\n");
     check_stack();
