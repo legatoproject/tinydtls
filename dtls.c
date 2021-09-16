@@ -3661,6 +3661,15 @@ handle_handshake(dtls_context_t *ctx, dtls_peer_t *peer, session_t *session,
   dtls_debug("received handshake packet of type: %s (%i)\n",
 	     dtls_handshake_type_to_name(hs_header->msg_type), hs_header->msg_type);
 
+  if ((peer->state == DTLS_STATE_CONNECTED)
+   && (hs_header->msg_type == DTLS_HT_CLIENT_HELLO)
+   && (peer->role == DTLS_CLIENT))
+  {
+    dtls_warn("Specific treatment to accept client hello\n");
+    dtls_handshake_free(peer->handshake_params);
+    peer->handshake_params = NULL;
+  }
+
   if (!peer || !peer->handshake_params) {
     /* This is the initial ClientHello */
     if (hs_header->msg_type != DTLS_HT_CLIENT_HELLO && !peer) {
