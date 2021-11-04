@@ -59,6 +59,12 @@
 #  include "sha2/sha2.h"
 #endif
 
+/*SWISTART*/
+#if defined(SIERRA) && defined(MK_CONFIG_AVMS_USE_IOT_KEYSTORE)
+#include "iks_keyStore.h"
+#endif
+/*SWISTOP*/
+
 #define dtls_set_version(H,V) dtls_int_to_uint16((H)->version, (V))
 #define dtls_set_content_type(H,V) ((H)->content_type = (V) & 0xff)
 #define dtls_set_length(H,V)  ((H)->length = (V))
@@ -666,6 +672,20 @@ calculate_key_block(dtls_context_t *ctx,
   int pre_master_len = 0;
   dtls_security_parameters_t *security = dtls_security_params_next(peer);
   uint8 master_secret[DTLS_MASTER_SECRET_LENGTH];
+/*SWISTART*/
+#if defined(SIERRA) && defined(MK_CONFIG_AVMS_USE_IOT_KEYSTORE)
+  // NOTE: The get_psk_info callback, which is invoked to retrieve the DTLS PSK, will
+  // ultimately attempt to read the LwM2M client Security objects's Secret Key
+  // resource. Since we are using the IKS to store secret keys, it is not possible
+  // to read the raw value of such keys - Instead the Secret Key resource's read handler
+  // returns an IKS reference to the secret key which we can use for subsequent crypto-
+  // graphic operations involving the PSK (i.e. computing the master secret).
+  iks_result_t iksStatus;
+  iks_KeyRef_t pskRef = NULL;
+  size_t       pskSize;
+  uint8_t      salt[IKS_TLS_1_2_MAX_SALT_SIZE] = {0};
+#endif
+/*SWISTOP*/
   (void)role; /* The macro dtls_kb_size() does not use role. */
 
   if (!security) {
@@ -683,11 +703,30 @@ calculate_key_block(dtls_context_t *ctx,
     len = CALL(ctx, get_psk_info, session, DTLS_PSK_KEY,
 	       handshake->keyx.psk.identity,
 	       handshake->keyx.psk.id_length,
+/*SWISTART*/
+#if defined(SIERRA) && defined(MK_CONFIG_AVMS_USE_IOT_KEYSTORE)
+	       &pskRef, sizeof(pskRef));
+#else
+/*SWISTOP*/
 	       psk, DTLS_PSK_MAX_KEY_LEN);
+/*SWISTART*/
+#endif
+/*SWISTOP*/
     if (len < 0) {
       dtls_crit("no psk key for session available\n");
       return len;
     }
+/*SWISTART*/
+#if defined(SIERRA) && defined(MK_CONFIG_AVMS_USE_IOT_KEYSTORE)
+    iksStatus = iks_GetKeySize(pskRef, &pskSize);
+    if (IKS_OK != iksStatus)
+    {
+      dtls_crit("failed to get psk key size\n");
+      return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
+    }
+    len = (int)pskSize;
+#endif
+/*SWISTOP*/
   /* Temporarily use the key_block storage space for the pre master secret. */
     pre_master_len = dtls_psk_pre_master_secret(psk, len,
 						pre_master_secret,
@@ -746,12 +785,56 @@ calculate_key_block(dtls_context_t *ctx,
   dtls_debug_dump("server_random", handshake->tmp.random.server, DTLS_RANDOM_LENGTH);
   dtls_debug_dump("pre_master_secret", pre_master_secret, pre_master_len);
 
+/*SWISTART*/
+#if defined(SIERRA) && defined(MK_CONFIG_AVMS_USE_IOT_KEYSTORE)
+  if (sizeof(salt) != 2*DTLS_RANDOM_LENGTH)
+  {
+    dtls_crit("salt buffer size is incorrect\n");
+    return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
+  }
+  // The salt is a concatenation of the ClientHello random and the ServerHello random.
+  memcpy(salt, handshake->tmp.random.client, DTLS_RANDOM_LENGTH);
+  memcpy(&salt[DTLS_RANDOM_LENGTH], handshake->tmp.random.server, DTLS_RANDOM_LENGTH);
+
+  // iks_tls_1_2DerivePskMasterSecret expects the result buffer to be
+  // IKS_TLS_1_2_MASTER_SECRET_SIZE bytes large
+  if (sizeof(master_secret) != IKS_TLS_1_2_MASTER_SECRET_SIZE)
+  {
+    dtls_crit("master secret buffer size is incorrect\n");
+    return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
+  }
+
+  // The pre-master secret computed by dtls_psk_pre_master_secret is of the format
+  // described in RFC 4279 for the plain PSK case:
+  //  ___________________________________________________________________________
+  // |_____PSK length_____|_____Zeroes_____|_____PSK length_____|______PSK_______|
+  //  <- sizeof(uint16) -> <- PSK length -> <- sizeof(uint16) -> <- PSK length ->
+  //
+  // The first sizeof(uint16) + PSK length bytes of the pre-master secret are the
+  // "other secret" component.
+  iksStatus = iks_tls_1_2DerivePskMasterSecret(pskRef,
+                                               pre_master_secret, // start of "other secret"
+                                               sizeof(uint16_t) + pskSize, // "length of "other secret"
+                                               PRF_LABEL(master),
+                                               salt,
+                                               sizeof(salt),
+                                               master_secret);
+  if (IKS_OK != iksStatus)
+  {
+    dtls_crit("failed to derive psk master secret\n");
+    return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
+  }
+#else
+/*SWISTOP*/
   dtls_prf(pre_master_secret, pre_master_len,
 	   PRF_LABEL(master), PRF_LABEL_SIZE(master),
 	   handshake->tmp.random.client, DTLS_RANDOM_LENGTH,
 	   handshake->tmp.random.server, DTLS_RANDOM_LENGTH,
 	   master_secret,
 	   DTLS_MASTER_SECRET_LENGTH);
+/*SWISTART*/
+#endif
+/*SWISTOP*/
 
   dtls_debug_dump("master_secret", master_secret, DTLS_MASTER_SECRET_LENGTH);
 
