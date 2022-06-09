@@ -46,6 +46,13 @@
 #define DTLS_VERSION 0xfefd	/* DTLS v1.2 */
 #endif
 
+/*SWISTART*/
+#if defined(SIERRA) && defined(MK_CONFIG_AVMS_USE_IOT_KEYSTORE)
+#include "iks_keyStore.h"
+#endif
+/*SWISTOP*/
+
+
 typedef enum dtls_credentials_type_t {
   DTLS_PSK_HINT, DTLS_PSK_IDENTITY, DTLS_PSK_KEY
 } dtls_credentials_type_t;

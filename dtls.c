@@ -682,7 +682,7 @@ calculate_key_block(dtls_context_t *ctx,
   // graphic operations involving the PSK (i.e. computing the master secret).
   iks_result_t iksStatus;
   iks_KeyRef_t pskRef = NULL;
-  size_t       pskSize;
+  size_t       pskSize = 0;
   uint8_t      salt[IKS_TLS_1_2_MAX_SALT_SIZE] = {0};
 #endif
 /*SWISTOP*/
@@ -705,7 +705,7 @@ calculate_key_block(dtls_context_t *ctx,
 	       handshake->keyx.psk.id_length,
 /*SWISTART*/
 #if defined(SIERRA) && defined(MK_CONFIG_AVMS_USE_IOT_KEYSTORE)
-	       &pskRef, sizeof(pskRef));
+	       (unsigned char*)&pskRef, sizeof(pskRef));
 #else
 /*SWISTOP*/
 	       psk, DTLS_PSK_MAX_KEY_LEN);
@@ -815,7 +815,7 @@ calculate_key_block(dtls_context_t *ctx,
   iksStatus = iks_tls_1_2DerivePskMasterSecret(pskRef,
                                                pre_master_secret, // start of "other secret"
                                                sizeof(uint16_t) + pskSize, // "length of "other secret"
-                                               PRF_LABEL(master),
+                                               (const char*)PRF_LABEL(master),
                                                salt,
                                                sizeof(salt),
                                                master_secret);
