@@ -803,18 +803,16 @@ calculate_key_block(dtls_context_t *ctx,
     dtls_crit("master secret buffer size is incorrect\n");
     return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
   }
-
   // The pre-master secret computed by dtls_psk_pre_master_secret is of the format
   // described in RFC 4279 for the plain PSK case:
   //  ___________________________________________________________________________
   // |_____PSK length_____|_____Zeroes_____|_____PSK length_____|______PSK_______|
   //  <- sizeof(uint16) -> <- PSK length -> <- sizeof(uint16) -> <- PSK length ->
   //
-  // The first sizeof(uint16) + PSK length bytes of the pre-master secret are the
-  // "other secret" component.
+  // Where the Zeroes are the "other secret" component.
   iksStatus = iks_tls_1_2DerivePskMasterSecret(pskRef,
-                                               pre_master_secret, // start of "other secret"
-                                               sizeof(uint16_t) + pskSize, // "length of "other secret"
+                                               pre_master_secret + sizeof(uint16_t), // start of "other secret"
+                                               pskSize, // "length of "other secret"
                                                (const char*)PRF_LABEL(master),
                                                salt,
                                                sizeof(salt),
